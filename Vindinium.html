@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link type="text/css" rel="stylesheet" href="Standard.css" />
+    <div id="container">
+        <div id="header">
+            <h1>
+				 Summit Prep Computer Science
+			</h1>
+        </div>
+        <div id="navigation">
+            <ul>
+                <li><a href="Welcome.html">Welcome</a>
+                </li>
+                <li><a href="AboutMe.html">About Me</a>
+                </li>
+                <li><a href="HTML.html">HTML</a>
+                </li>
+                <li><a href="hardware.html">Hardware</a>
+                </li>
+                <li><a href="Calc.html">Calculator</a>
+                </li>
+                <li><a href="Vindinium.html">Vindinium</a>
+                </li>
+            </ul>
+        </div>
+        <div id="content">
+            <h2>
+				What is Vindinium?
+			</h2>
+            <p>
+                Vindinium is a multi-player turn based dungeon crawling game. Each player has one hero that can move across a map. The objective is for players to amass the maximum quantity of gold during a predetermined number of turns. Players must take control of gold mines to produce gold; however, gold mines are protected by goblins. When a player defeats a goblin, he becomes owner of the gold mine and receives one gold per turn. Furthermore, the goblin now defends the mine against other players. Heroes can fight each other. The survivor gets control of all his opponent's gold mines. The killed hero is immediately respawned with all his gold, but no mine. When going to the tavern, heroes can buy beers for gold, restoring their life points. The objective is to create a computer program (a bot) that plays the game of Vindinium as intelligently as possible. It is recommended that you use one of the starter packages as a starting point.
+
+            </p>
+
+            <p>
+                <ol><strong>How to Play</strong>
+                    <li>You should be familiar with any language of coding preferably in JavaScript.</li>
+                    <li>Once you are familiar, go to the website at Vindinium.org to get the Doc Starters (select the language you are going to code with)</li>
+                    <li>Once you have all the files, it is time to open test.js and start coding!</li>
+                    <li>This is where you start creating your AI or bot to preform task such as claim enemy and free mines, go to a tavern to heal up, and even fight other bots.</li>
+                    <li>To run the game once you are confident in your coding and has no mistakes, you can open the terminal and type node test.js to see how your bot is doing.</li>
+                </ol>
+            </p>
+            <p>
+                <ol><strong>Different types of play styles</strong>
+                    <li>You can go for objects where you would ignore enemies and go straight for controll over the mines</li>
+                    <li>You can go a bounty hunt where you would find enemy bots near your bot location and it will seek and fight him</li>
+                    <li>You can have a combination of both where you will take mines and only fight when needed to.</li>
+                </ol>
+            </p>
+            <h2>My Code</h2>
+            <p>
+                My Bot AI is programed to take control of 75% of the map then will seek out the lowest enemy bot. It will not fight until it has control of 75% or more of the map.
+            </p>
+            <div>
+                <code><pre>
+        var Bot = require('bot');
+var PF = require('pathfinding');
+//Put your bot's code here and change training to Arena when you want to fight others.
+//var bot = new Bot('qyb0r8wx', 'training', 'http://vindinium.org');
+//Put your bot's code here and change training to Arena when you want to fight others.
+var bot = new Bot('hqi900js', 'arena', 'http://52.8.116.125:9000');
+var goDir;
+var Promise = require('bluebird');
+Bot.prototype.botBrain = function() {
+    return new Promise(function(resolve, reject) {
+        _this = bot;
+        //////* Write your bot below Here *//////
+        //////* Set `myDir` in the direction you want to go and then bot.goDir is set to myDir at the bottom *////////
+        /*                                      * 
+         * This Code is global data!            *
+         *                                      */
+        // Set myDir to what you want and it will set bot.goDir to that direction at the end.  Unless it is "none"
+        var myDir;
+        var myPos = [bot.yourBot.pos.x, bot.yourBot.pos.y];
+        var enemyBots = [];
+        if(bot.yourBot.id != 1) enemyBots.push(bot.bot1);
+        if(bot.yourBot.id != 2) enemyBots.push(bot.bot2);
+        if(bot.yourBot.id != 3) enemyBots.push(bot.bot3);
+        if(bot.yourBot.id != 4) enemyBots.push(bot.bot4);
+        // Tells the bot which mines are not owned by me.//
+        var notMyMines = [];
+        notMyMines = notMyMines.concat(bot.freeMines);
+        if(bot.yourBot.id != 1) notMyMines = notMyMines.concat(bot.bot1mines);
+        if(bot.yourBot.id != 2) notMyMines = notMyMines.concat(bot.bot2mines);
+        if(bot.yourBot.id != 3) notMyMines = notMyMines.concat(bot.bot3mines);
+        if(bot.yourBot.id != 4) notMyMines = notMyMines.concat(bot.bot4mines);
+        var totalMines = bot.freeMines.length + notMyMines.length
+        // determines what this bot does//
+        // This sets a thresh-hold on when a bot should go to the tavern to gain health//
+        var task;
+        if(bot.yourBot.life < 40) {
+            task = "taverns";
+            // seeks a percentage of the map --> in this case, he will only try to controll 75% of the map//
+        } else if(Math.floor(100 * bot.yourBot.mineCount / totalMines) < 75) {
+            task = "freemines";
+            // Once the % of mines is completed, this bot will start seeking out players with the lowest health. //
+        } else {
+            task = "fightLowestEnemyBot"
+        }
+        console.log("this is task: " + task);
+        // This Code Determines HOW to do it   //
+        // This Code find the nearest freemine and sets myDir toward that direction // 
+        if(task === "freemines") {
+            var closestMine = notMyMines[0];
+            for(i = 0; i < notMyMines.length; i++) {
+                if(bot.findDistance(myPos, closestMine) > bot.findDistance(myPos, notMyMines[i])) {
+                    closestMine = notMyMines[i];
+                }
+            }
+            console.log("Going to a mine!");
+            myDir = bot.findPath(myPos, closestMine);
+        }
+        // This Code finds the nearest Tavern and sets myDir towards that direction //
+        if(task === "taverns") {
+            var closestTavern = bot.taverns[0];
+            for(i = 0; i < bot.taverns.length; i++) {
+                if(bot.findDistance(myPos, closestTavern) > bot.findDistance(myPos, bot.taverns[i])) {
+                    closestTavern = bot.taverns[i];
+                }
+            }
+            console.log("Go to the Nearest Tavern!");
+            myDir = bot.findPath(myPos, closestTavern);
+        }
+        //This code seeks out the lowest ememy on the map and fights them.//   
+        if(task === "fightLowestEnemyBot") {
+            var lowestHealthIndex = 0;
+            for(i = 0; i < enemyBots.length; i++) {
+                if(enemyBots[lowestHealthIndex].life > enemyBots[i].life) {
+                    lowestHealthIndex = i;
+                }
+            }
+            console.log("why not work? :" + Math.floor(100 * bot.yourBot.mineCount / totalMines))
+            console.log("Attacking the weakest link")
+            myDir = bot.findPath(myPos, [enemyBots[lowestHealthIndex].pos.x, enemyBots[lowestHealthIndex].pos.y])
+        }
+        /*                                      * 
+        /*                                                                                                                              * 
+         * This Code Sets your direction based on myDir.  If you are trying to go to a place that you can't reach, you move randomly.   *
+         * Otherwise you move in the direction set by your code.  Feel free to change this code if you want.                            */
+        console.log("task changing?: " + task);
+        if(myDir === "none") {
+            console.log("going random");
+            var rand = Math.floor(Math.random() * 4); //
+            var dirs = ["north", "south", "east", "west"];
+            bot.goDir = dirs[rand];
+        } else {
+            bot.goDir = myDir;
+        }
+        ///////////* DON'T REMOVE ANTYTHING BELOW THIS LINE *//////////////
+        resolve();
+    });
+};
+bot.runGame();
+        </pre></code>
+                <h2>How the code works</h2>
+                <code><pre>
+ var myDir;
+        var myPos = [bot.yourBot.pos.x, bot.yourBot.pos.y];
+        var enemyBots = [];
+        if(bot.yourBot.id != 1) enemyBots.push(bot.bot1);
+        if(bot.yourBot.id != 2) enemyBots.push(bot.bot2);
+        if(bot.yourBot.id != 3) enemyBots.push(bot.bot3);
+        if(bot.yourBot.id != 4) enemyBots.push(bot.bot4);
+            </pre></code>
+                <p>This allows my Ai to register itself as an entity on the map. This also registers other Ai bots on the current map to be enemies.</p>
+                <code><pre>
+ var notMyMines = [];
+        notMyMines = notMyMines.concat(bot.freeMines);
+        if(bot.yourBot.id != 1) notMyMines = notMyMines.concat(bot.bot1mines);
+        if(bot.yourBot.id != 2) notMyMines = notMyMines.concat(bot.bot2mines);
+        if(bot.yourBot.id != 3) notMyMines = notMyMines.concat(bot.bot3mines);
+        if(bot.yourBot.id != 4) notMyMines = notMyMines.concat(bot.bot4mines);
+        var totalMines = bot.freeMines.length + notMyMines.length
+</pre></code>
+                <p>this is similar to enemy bots but instead registers the available mines I can take in addition to the mines that are owned by the enemy bots.</p>
+                <code><pre>
+                var task;
+        if(bot.yourBot.life < 40) {
+            task = "taverns";
+                </pre></code>
+                <p>this code allows a bot to go to a tavern when it is below a certain amount of health. In this case, the bot will head towards the nearest tavern when health reaches below 40.</p>
+                <code><pre>
+                else if(Math.floor(100 * bot.yourBot.mineCount / totalMines) < 75) {
+            task = "freemines";
+            // Once the % of mines is completed, this bot will start seeking out players with the lowest health. //
+        } else {
+            task = "fightLowestEnemyBot"
+                </pre></code>
+                <p>This code allows me to seek a percentage of the map. In this case, 75% of the map is attempted to be controlled and once this command is accomplished, then its next task is to seek out the lowest health enemy bot.</p>
+                <code><pre>
+// This Code find the nearest freemine and sets myDir toward that direction // 
+        if(task === "freemines") {
+            var closestMine = notMyMines[0];
+            for(i = 0; i < notMyMines.length; i++) {
+                if(bot.findDistance(myPos, closestMine) > bot.findDistance(myPos, notMyMines[i])) {
+                    closestMine = notMyMines[i];
+                }
+            }
+            console.log("Going to a mine!");
+            myDir = bot.findPath(myPos, closestMine);
+        }
+                </pre></code> 
+<p>Now if the task is to go to a free mine, this is where the action takes place. This tells the bot that if your currect action is to go to a free mine, you will seek the closest mine to you either it is a free mine or enemy mine. </p>
+                <code><pre>
+                if(task === "taverns") {
+            var closestTavern = bot.taverns[0];
+            for(i = 0; i < bot.taverns.length; i++) {
+                if(bot.findDistance(myPos, closestTavern) > bot.findDistance(myPos, bot.taverns[i])) {
+                    closestTavern = bot.taverns[i];
+                }
+            }
+            console.log("Go to the Nearest Tavern!");
+            myDir = bot.findPath(myPos, closestTavern);
+        }
+                </pre></code>
+                <p>If your health is below 40, your bot will go to the nearest tavern with this code. This allows your bot to find and set its direction on the nearest tavern and will re-route if the closest tavern is not accessible.</p>
+            <code><pre>
+            if(task === "fightLowestEnemyBot") {
+            var lowestHealthIndex = 0;
+            for(i = 0; i < enemyBots.length; i++) {
+                if(enemyBots[lowestHealthIndex].life > enemyBots[i].life) {
+                    lowestHealthIndex = i;
+                }
+            }
+            console.log("why not work? :" + Math.floor(100 * bot.yourBot.mineCount / totalMines))
+            console.log("Attacking the weakest link")
+            myDir = bot.findPath(myPos, [enemyBots[lowestHealthIndex].pos.x, enemyBots[lowestHealthIndex].pos.y])
+        }
+            </pre></code>
+            <p>Now if the task is to fight the lowest enemy health bot, this sets the direction towards that enemy and fights him. Note, this is only possible if you have at least 75% of the mines owned with this currect code.</p>
+            <code><pre>
+             console.log("task changing?: " + task);
+        if(myDir === "none") {
+            console.log("going random");
+            var rand = Math.floor(Math.random() * 4); //
+            var dirs = ["north", "south", "east", "west"];
+            bot.goDir = dirs[rand];
+        } else {
+            bot.goDir = myDir;
+        }
+            </pre></code>
+            <p>This is the last code of the vindinium project. This is the movement code for when the bot AI does not have any active commands. This says that he will keep moving in random directions in either north, south, east, or west. This is only possible if your bot does not have any commands such as fight lowest enemy bot or to get free mines.</p>
+            </div>
+            <div id="footer">
+                Brian Lee Computer Science
+            </div>
+        </div>
+
+</html>
